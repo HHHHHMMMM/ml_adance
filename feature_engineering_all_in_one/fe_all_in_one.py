@@ -173,7 +173,7 @@ class MLPipeline:
 
     def preprocess_with_monitoring(self,
                                    df: pd.DataFrame,
-                                   target_col: str) -> Tuple[pd.DataFrame, pd.Series, Dict]:
+                                   target_col: str) -> Tuple[pd.DataFrame, pd.Series, Dict,Dict]:
         """带监控的数据预处理"""
         self.memory_monitor.start_monitoring()
         self.logger.info("开始数据预处理...")
@@ -195,7 +195,7 @@ class MLPipeline:
         # 记录最终内存使用
         memory_profile = self.memory_monitor.get_memory_profile()
 
-        return X, y, memory_profile
+        return X, y, memory_profile,type_report
 
     def train_with_monitoring(self,
                               model,
@@ -340,7 +340,6 @@ class MLPipeline:
         # 清理已有处理器，避免重复添加
         for handler in logger.handlers[:]:  # 复制处理器列表进行迭代
             logger.removeHandler(handler)
-
         # 添加新的处理器
         if not logger.handlers:  # 确保没有处理器后添加
             handler = logging.StreamHandler()
@@ -1123,17 +1122,19 @@ class MLPipeline:
             target_col=target_col
         )
 
-        # 特征预处理阶段（带类型优化）
-        self.logger.info("开始特征预处理阶段...")
-        # 首先进行数据类型优化
-        train_data_optimized = self.data_processor.infer_and_convert_types(complete_data)
-        type_report = self.data_processor.check_data_types(train_data_optimized)
-        self.logger.info(f"数据类型优化报告: {type_report}")
+        # # 特征预处理阶段（带类型优化）
+        # self.logger.info("开始特征预处理阶段...")
+        # # 首先进行数据类型优化
+        # train_data_optimized = self.data_processor.infer_and_convert_types(complete_data)
+        # type_report = self.data_processor.check_data_types(train_data_optimized)
+        # self.logger.info(f"数据类型优化报告: {type_report}")
+
+        X, y, memory_profile,type_report=self.preprocess_with_monitoring(df=complete_data,target_col=target_col)
 
         X_train_processed, X_val_processed, y_train_processed, y_val_processed = self.preprocess_features(
-            X_train=X_train,
+            X_train=X,
             X_val=X_val,
-            y_train=y_train,
+            y_train=y,
             y_val=y_val,
             config=pipeline_config.preprocess.__dict__
         )

@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="e1e8b2aa-ba9c-43a4-8228-5169ea6cd133" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/ml_advance.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_all_in_one/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_all_in_one/fe_all_in_one.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/config/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/config/pipeline_config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/data/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/features/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/features/extractor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/features/processor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/models/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/models/trainer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/pipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/utils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/utils/monitoring.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feature_engineering_all_in_one/fe_all_in_one.py" beforeDir="false" afterPath="$PROJECT_DIR$/feature_engineering_all_in_one/fe_all_in_one.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,11 +35,13 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 7
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
   <component name="ProjectId" id="2q5yniV1dnt7iky558fj2ZAohSg" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -39,6 +50,11 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "master",
+    "last_opened_file_path": "F:/ml/ml_adance",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   }
@@ -60,6 +76,7 @@
       <option name="presentableId" value="Default" />
       <updated>1733966900006</updated>
       <workItem from="1733966901127" duration="110000" />
+      <workItem from="1733967782625" duration="10650000" />
     </task>
     <servers />
   </component>

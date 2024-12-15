@@ -554,15 +554,20 @@ class MLPipeline:
                 X_train_processed[col] = encoder.fit_transform(X_train_processed[col])
                 X_val_processed[col] = encoder.transform(X_val_processed[col])
             else:  # onehot encoding
-                encoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
+                encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
                 col_encoded = encoder.fit_transform(X_train_processed[[col]])
                 col_encoded_val = encoder.transform(X_val_processed[[col]])
 
                 new_cols = [f"{col}_{i}" for i in range(col_encoded.shape[1])]
 
                 for i, new_col in enumerate(new_cols):
-                    X_train_processed[new_col] = col_encoded[:, i]
-                    X_val_processed[new_col] = col_encoded_val[:, i]
+                    num_rows = col_encoded[:, i].shape[0]  # 获取稀疏矩阵该列对应的行数（即长度）
+                    # 创建一个长度匹配的全零列表（你也可以根据实际情况调整填充值等逻辑）
+                    filled_list = [0] * num_rows
+                    X_train_processed[new_col] = filled_list
+                    num_rows_val = col_encoded_val[:, i].shape[0]
+                    filled_list_val = [0] * num_rows_val
+                    X_val_processed[new_col] = filled_list_val
 
                 X_train_processed = X_train_processed.drop(columns=[col])
                 X_val_processed = X_val_processed.drop(columns=[col])
@@ -2172,7 +2177,7 @@ if __name__ == "__main__":
             'deep_feature_config': {
                 'hidden_dims': [256, 128, 64],
                 'batch_size': 1024,
-                'epochs': 10,
+                'epochs': 100,
                 'learning_rate': 1e-3,
                 'dropout_rate': 0.3,
                 'feature_extraction': {
@@ -2204,13 +2209,13 @@ if __name__ == "__main__":
 
         # 模型训练配置
         #'models': ['logistic', 'rf', 'xgb', 'lgb', 'catboost'],
-        'models': ['xgb', 'catboost','logistic'],
+        'models': ['catboost'],
         'optimize_hyperparameters': True,
         'optimization_method': 'optuna',
-        'n_trials': 10,
+        'n_trials': 100,
         'cv': 5,
         'save_models': True,
-        'output_dir': '/kaggle/working/output',
+        'output_dir': 'output/',
         # 超参数优化的参数网格
         'param_grids': {
             'logistic': {
@@ -2248,7 +2253,7 @@ if __name__ == "__main__":
 
     try:
         # 检查数据目录和文件
-        data_dir = '/kaggle/input/risk232/'
+        data_dir = 'datasets/'
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
             logger.warning(f"创建数据目录: {data_dir}")

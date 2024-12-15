@@ -117,6 +117,35 @@ class MLPipeline:
             self.logger.error(f"数据加载失败: {str(e)}")
             raise
 
+
+    def readFiles(self,data_path:str, target_col: str)->Tuple[pd.DataFrame,pd.Series]:
+        train_data=[f for f in os.listdir(data_path) if f.startswith('train')]
+        train_file = os.path.join(data_path, train_data[0])
+        self.logger.info(f"正在读取训练文件: {train_file}")
+        file_ext = os.path.splitext(train_file)[1]
+        try:
+            if file_ext == '.csv':
+                df = pd.read_csv(train_file)
+            elif file_ext in ['.xls', '.xlsx']:
+                df = pd.read_excel(train_file)
+            elif file_ext == '.parquet':
+                df = pd.read_parquet(train_file)
+            else:
+                raise ValueError(f"不支持的文件格式: {file_ext}")
+
+            # 检查数据完整性
+            if df.empty:
+                raise ValueError("加载的数据集为空")
+            self.logger.info(f"数据加载完成，形状: {df.shape}")
+
+            # 检查目标列
+            if target_col not in df.columns:
+                raise ValueError(f"目标列 '{target_col}' 不在数据中")
+        except Exception as e:
+            self.logger.error(f"数据加载失败: {str(e)}")
+            raise
+
+
     def preprocess_with_monitoring(self,
                                    df: pd.DataFrame,
                                    target_col: str) -> Tuple[pd.DataFrame, pd.Series, Dict, Dict]:

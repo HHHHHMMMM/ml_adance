@@ -4,21 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e1e8b2aa-ba9c-43a4-8228-5169ea6cd133" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/config/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/config/pipeline_config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/data/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/features/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/features/extractor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/features/processor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/models/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/models/trainer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/pipeline.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/utils/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/feature_engineering_in_split/utils/monitoring.py" afterDir="false" />
+    <list default="true" id="e1e8b2aa-ba9c-43a4-8228-5169ea6cd133" name="Changes" comment="拆分没拆完版本，但fe_all_in_one版本是可用的">
+      <change afterPath="$PROJECT_DIR$/lh_advance" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/feature_engineering_all_in_one/fe_all_in_one.py" beforeDir="false" afterPath="$PROJECT_DIR$/feature_engineering_all_in_one/fe_all_in_one.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,6 +24,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;HHHHHMMMM&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/HHHHHMMMM/ml_adance.git&quot;,
+    &quot;accountId&quot;: &quot;8f9e2b2a-d873-4bb0-bcfc-f37d3f313d40&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -46,19 +47,19 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "F:/ml/ml_adance",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;F:/ml/ml_adance&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -76,11 +77,30 @@
       <option name="presentableId" value="Default" />
       <updated>1733966900006</updated>
       <workItem from="1733966901127" duration="110000" />
-      <workItem from="1733967782625" duration="10650000" />
+      <workItem from="1733967782625" duration="15324000" />
+      <workItem from="1734311998604" duration="781000" />
+      <workItem from="1734403665374" duration="632000" />
+      <workItem from="1734415265571" duration="632000" />
+      <workItem from="1734416249203" duration="593000" />
+      <workItem from="1734454784391" duration="1210000" />
+      <workItem from="1734484054474" duration="600000" />
     </task>
+    <task id="LOCAL-00001" summary="拆分没拆完版本，但fe_all_in_one版本是可用的">
+      <option name="closed" value="true" />
+      <created>1733987450456</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1733987450456</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="拆分没拆完版本，但fe_all_in_one版本是可用的" />
+    <option name="LAST_COMMIT_MESSAGE" value="拆分没拆完版本，但fe_all_in_one版本是可用的" />
   </component>
 </project>

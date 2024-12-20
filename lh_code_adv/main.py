@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from lh_code_adv.QuantTrading import QuantTradingSystem
-from lh_code_adv.all.all import Config
+from lh_code_adv.trading.TradingSignalGenerator import TradingSignalGenerator
 from utils.logger import setup_logger
 import logging
 
@@ -54,6 +54,8 @@ def main():
         # 3. 数据处理和特征工程
         logger.info("Step 3: 开始数据处理和特征工程...")
         processed_data = {}
+        signal_generator = TradingSignalGenerator()
+
         for ts_code, data in historical_data.items():
             try:
                 logger.info(f"正在处理 {ts_code} 的数据...")
@@ -63,23 +65,32 @@ def main():
                     # 特征工程
                     features = trading_system.feature_engineer.create_features(processed)
 
-                    # 确保保留原始的 close 列（如果必要）
-                    if 'close' not in features.columns:
-                        features['close'] = processed['close']
+                    # 确保保留原始的价格列
+                    essential_columns = ['close', 'open', 'high', 'low', 'vol', 'amount']
+                    for col in essential_columns:
+                        if col not in features.columns and col in processed.columns:
+                            features[col] = processed[col]
 
-                    # 添加目标变量（action 标签）
-                    features = add_action_label(features,
-                                                close_column='close',
-                                                volume_column='vol',
-                                                high_column='high',
-                                                low_column='low',
-                                                n_days=1)
+                    # 生成规则基标签
+                    features = signal_generator.add_rule_based_label(features)
+
+                    # 生成机器学习标签（基于未来收益）
+                    features = signal_generator.generate_ml_labels(
+                        features,
+                        forward_period=1,
+                        return_threshold=0.02
+                    )
 
                     if 'action' not in features.columns or features['action'].isna().all():
-                        logger.warning(f"{ts_code} 的数据无法生成有效的目标标签")
+                        logger.warning(f"{ts_code} 的数据无法生成有效的规则基标签")
                         continue
+
+                    if 'ml_label' not in features.columns or features['ml_label'].isna().all():
+                        logger.warning(f"{ts_code} 的数据无法生成有效的机器学习标签")
+                        continue
+
                     processed_data[ts_code] = features
-                    logger.info(f"成功处理 {ts_code} 的数据，生成 {len(features.columns)} 个特征（包含标签）")
+                    logger.info(f"成功处理 {ts_code} 的数据，生成 {len(features.columns)} 个特征和两种标签")
             except Exception as e:
                 logger.error(f"处理 {ts_code} 的数据失败: {str(e)}")
                 continue
@@ -89,18 +100,42 @@ def main():
             return
 
         logger.info(f"数据处理完成，共处理 {len(processed_data)} 只股票的数据")
+
         # 4. 特征选择
         logger.info("Step 4: 开始特征选择...")
         try:
-            combined_X = pd.concat([processed_data[ts_code].drop(columns=['action']) for ts_code in processed_data])
-            combined_y = pd.concat([processed_data[ts_code]['action'] for ts_code in processed_data])
+            # 分别为规则基和机器学习准备数据
+            price_cols = ['open', 'high', 'low', 'close']  # 这些可以去除
+            trading_cols = ['vol', 'amount']  # 这些建议保留
+            exclude_cols = ['action', 'ml_label'] + price_cols  # 只去除价格列和标签列
 
-            selected_features = trading_system.feature_selector.select_features(
+            combined_X = pd.concat([processed_data[ts_code].drop(columns=exclude_cols)
+                                    for ts_code in processed_data])
+
+            # 规则基标签
+            combined_y_rule = pd.concat([processed_data[ts_code]['action']
+                                         for ts_code in processed_data])
+
+            # 机器学习标签
+            combined_y_ml = pd.concat([processed_data[ts_code]['ml_label']
+                                       for ts_code in processed_data])
+
+            # 特征选择（可以选择对两种标签分别进行特征选择）
+            selected_features_ml = trading_system.feature_selector.select_features(
                 combined_X,
-                combined_y,
+                combined_y_ml,
                 method='boruta'
             )
-            logger.info(f"特征选择完成，选择了 {len(selected_features)} 个特征")
+
+            selected_features_rule = trading_system.feature_selector.select_features(
+                combined_X,
+                combined_y_rule,
+                method='boruta'
+            )
+
+            logger.info(f"特征选择完成，为机器学习模型选择了 {len(selected_features_ml)} 个特征")
+            logger.info(f"特征选择完成，为规则基模型选择了 {len(selected_features_rule)} 个特征")
+
         except Exception as e:
             logger.error(f"特征选择失败: {str(e)}")
             return
@@ -108,11 +143,15 @@ def main():
         # 5. 数据集划分
         logger.info("Step 5: 开始划分训练集和验证集...")
         try:
-            dataset = trading_system._split_dataset(
-                combined_X[selected_features], combined_y
+            # 为机器学习模型划分数据集
+            dataset_ml = trading_system._split_dataset(
+                combined_X[selected_features_ml],
+                combined_y_ml
             )
-            train_data, valid_data = dataset['train'], dataset['valid']
-            logger.info(f"数据集划分完成，训练集样本数: {len(train_data['X'])}, 验证集样本数: {len(valid_data['X'])}")
+            train_data_ml, valid_data_ml = dataset_ml['train'], dataset_ml['valid']
+
+            logger.info(f"数据集划分完成，训练集样本数: {len(train_data_ml['X'])}, "
+                        f"验证集样本数: {len(valid_data_ml['X'])}")
         except Exception as e:
             logger.error(f"数据集划分失败: {str(e)}")
             return
@@ -120,13 +159,33 @@ def main():
         # 6. 训练模型
         logger.info("Step 6: 开始训练模型...")
         try:
+            # 训练机器学习模型
             model_performance = trading_system.train_ensemble_model(
-                train_data['X'],
-                train_data['y'],
-                valid_data['X'],
-                valid_data['y'],
-                original_data  # 传入原始数据
+                train_data_ml['X'],
+                train_data_ml['y'],
+                valid_data_ml['X'],
+                valid_data_ml['y'],
+                original_data
             )
+
+            # 记录预测结果
+            ml_predictions = model_performance['validation_predictions']
+
+            # 对验证集生成规则基信号
+            valid_features = processed_data[list(processed_data.keys())[0]].iloc[len(train_data_ml['X']):]
+            rule_predictions = signal_generator.add_rule_based_label(valid_features)['action']
+
+            # 合并两种信号
+            final_predictions = []
+            for ml_pred, rule_pred in zip(ml_predictions, rule_predictions):
+                if ml_pred == rule_pred:
+                    final_predictions.append(ml_pred)
+                elif ml_pred == 0:
+                    final_predictions.append(rule_pred)
+                else:
+                    # 使用alpha权重
+                    final_predictions.append(ml_pred if np.random.random() < 0.7 else rule_pred)
+
             logger.info("模型训练完成")
             logger.info("模型性能指标:")
             for metric, value in model_performance.items():
@@ -135,56 +194,78 @@ def main():
             logger.error(f"模型训练失败: {str(e)}")
             return
 
-        # 在评估之前添加
-        signal_distribution = pd.Series(model_performance['validation_predictions']).value_counts()
-        logger.info(f"预测信号分布:\n{signal_distribution}")
-        # 评估阶段使用保存的价格数据
+        # 分析信号分布
+        signal_distribution_ml = pd.Series(ml_predictions).value_counts()
+        signal_distribution_rule = pd.Series(rule_predictions).value_counts()
+        signal_distribution_final = pd.Series(final_predictions).value_counts()
+
+        logger.info("信号分布:")
+        logger.info(f"\n机器学习信号:\n{signal_distribution_ml}")
+        logger.info(f"\n规则基信号:\n{signal_distribution_rule}")
+        logger.info(f"\n最终信号:\n{signal_distribution_final}")
+
+        # 7. 评估阶段
         logger.info("Step 7: 开始模型评估...")
         try:
             # 获取股票数据
             stock_code = list(processed_data.keys())[0]
-            logger.info(f"使用的股票代码: {stock_code}")
             price_data = historical_data[stock_code]
-
-            # 确保数据按日期排序
             price_data = price_data.sort_values('trade_date')
 
-            # 计算基准收益率
+            # 获取基准收益率
             benchmark_returns = trading_system.get_benchmark_data(
                 start_date=price_data['trade_date'].min(),
                 end_date=price_data['trade_date'].max()
             )
 
-            # 计算策略收益率
-            strategy_returns = trading_system.calculate_returns(
-                predictions=model_performance['validation_predictions'][-len(price_data):],  # 确保长度匹配
+            # 分别计算各种信号的策略收益率
+            strategy_returns_ml = trading_system.calculate_returns(
+                predictions=ml_predictions,
                 price_data=price_data,
                 trade_cost=0.0003,
                 slippage=0.002
             )
 
-            # 打印一些调试信息
-            logger.info(f"预测信号长度: {len(model_performance['validation_predictions'])}")
-            logger.info(f"价格数据长度: {len(price_data)}")
-            logger.info(f"计算得到的收益率长度: {len(strategy_returns)}")
-
-            # 评估策略
-            evaluation_results = trading_system.strategy_evaluator.evaluate_strategy(
-                strategy_returns,
-                benchmark_returns
+            strategy_returns_rule = trading_system.calculate_returns(
+                predictions=rule_predictions,
+                price_data=price_data,
+                trade_cost=0.0003,
+                slippage=0.002
             )
+
+            strategy_returns_final = trading_system.calculate_returns(
+                predictions=final_predictions,
+                price_data=price_data,
+                trade_cost=0.0003,
+                slippage=0.002
+            )
+
+            # 评估各种策略
+            evaluation_results = {
+                'ML_Strategy': trading_system.strategy_evaluator.evaluate_strategy(
+                    strategy_returns_ml, benchmark_returns
+                ),
+                'Rule_Strategy': trading_system.strategy_evaluator.evaluate_strategy(
+                    strategy_returns_rule, benchmark_returns
+                ),
+                'Combined_Strategy': trading_system.strategy_evaluator.evaluate_strategy(
+                    strategy_returns_final, benchmark_returns
+                )
+            }
 
             logger.info("模型评估完成")
             logger.info("评估结果:")
-            for category, metrics in evaluation_results.items():
-                logger.info(f"\n{category.upper()} METRICS:")
-                for metric, value in metrics.items():
-                    logger.info(f"{metric}: {value:.4f}")
+            for strategy_name, results in evaluation_results.items():
+                logger.info(f"\n{strategy_name}:")
+                for category, metrics in results.items():
+                    logger.info(f"\n{category.upper()} METRICS:")
+                    for metric, value in metrics.items():
+                        logger.info(f"{metric}: {value:.4f}")
 
         except Exception as e:
             logger.error(f"模型评估失败: {str(e)}")
             import traceback
-            traceback.print_exc()  # 打印完整的错误堆栈
+            traceback.print_exc()
             return
 
         # 8. 启动实时交易

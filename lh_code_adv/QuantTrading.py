@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 
-from lh_code_adv.backtesting.backtesting_engine import BacktestEngine
 from lh_code_adv.config.config import Config
 from lh_code_adv.data.data_engine import DataEngine
 from lh_code_adv.data.data_manager import DataManager
@@ -30,7 +29,7 @@ class QuantTradingSystem:
         self.data_processor = DataProcessor()
         self.feature_engineer = FeatureEngineer()
         self.model_engine = ModelEngine()
-        self.backtest_engine = BacktestEngine(Config.INITIAL_CAPITAL)
+        #self.backtest_engine = BacktestEngine(Config.INITIAL_CAPITAL)
         self.trade_executor = TradeExecutor()
         self.risk_manager = RiskManager()
         self.trading_monitor = TradingMonitor()
@@ -198,42 +197,27 @@ class QuantTradingSystem:
         self.data_manager = DataManager()
         self.strategy_evaluator = StrategyEvaluator()
 
-    def train_ensemble_model(self, X_train, y_train, X_val, y_val, original_data):
+    def train_ensemble_model(self, X_train, y_train, X_val=None, y_val=None, original_data=None):
         """训练集成模型"""
         try:
-            # 特征选择
-            selected_features = self.feature_selector.select_features(
-                X=X_train,
-                y=y_train,
-                method='random_forest',
-                n_features=20
-            )
-
-            X_train_selected = X_train[selected_features]
-            X_val_selected = X_val[selected_features]
-
             # 构建和训练模型
             self.model_ensemble.build_ensemble()
-            self.model_ensemble.fit(X_train_selected, y_train)
+            self.model_ensemble.fit(X_train, y_train)
 
-            # 优化权重
-            best_weights = self.model_ensemble.optimize_weights(X_val_selected, y_val)
+            # 使用训练好的模型进行预测
+            predictions = self.model_ensemble.predict(X_train)
+            score = accuracy_score(y_train, predictions)
 
-            # 使用最优权重进行预测
-            val_predictions = self.model_ensemble.predict(X_val_selected)
-            val_score = accuracy_score(y_val, val_predictions)
-
+            # 简化返回值，只返回必要的信息
             return {
-                'accuracy': val_score,
-                'selected_features': selected_features,
-                'validation_predictions': val_predictions,
-                'optimized_weights': best_weights,
-                'price_data': original_data  # 添加原始价格数据
+                'predictions': predictions,  # 预测结果
+                'accuracy': score  # 模型准确率
             }
 
         except Exception as e:
-            logging.error(f"模型训练失败: {str(e)}")
+            logging.error(f"模型训练失败")
             raise
+
 
     def run_realtime_trading(self):
         """运行实时交易"""
@@ -451,42 +435,20 @@ class QuantTradingSystem:
            """
         self.logger.info(status)
 
-    def _split_dataset(self, X, y, test_size=0.2, random_state=42):
-        """
-        划分数据集为训练集和验证集。
-
-        Parameters:
-        -----------
-        X : DataFrame
-            特征数据
-        y : Series
-            目标变量
-        test_size : float
-            测试集比例（默认为 0.2）
-        random_state : int
-            随机种子（默认为 42）
-
-        Returns:
-        --------
-        dict : 包含训练集和验证集的字典
-            {
-                'train': {'X': X_train, 'y': y_train},
-                'valid': {'X': X_valid, 'y': y_valid}
-            }
-        """
-        from sklearn.model_selection import train_test_split
-
-        try:
-            X_train, X_valid, y_train, y_valid = train_test_split(
-                X, y, test_size=test_size, random_state=random_state
-            )
+    def time_series_split(self, X, y, split_date=None):
+        """按时间顺序划分数据集"""
+        if split_date is None:
+            # 默认使用最后20%的数据作为验证集
+            split_idx = int(len(X) * 0.8)
             return {
-                'train': {'X': X_train, 'y': y_train},
-                'valid': {'X': X_valid, 'y': y_valid},
+                'train': {'X': X.iloc[:split_idx], 'y': y.iloc[:split_idx]},
+                'valid': {'X': X.iloc[split_idx:], 'y': y.iloc[split_idx:]}
             }
-        except Exception as e:
-            raise RuntimeError(f"数据集划分失败: {str(e)}")
-
+        else:
+            return {
+                'train': {'X': X[X.index <= split_date], 'y': y[y.index <= split_date]},
+                'valid': {'X': X[X.index > split_date], 'y': y[y.index > split_date]}
+            }
     def get_benchmark_data(self, start_date, end_date):
         """获取沪深300指数数据作为基准"""
         try:

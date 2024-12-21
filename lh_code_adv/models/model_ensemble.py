@@ -1,22 +1,31 @@
 import numpy as np
+from lightgbm import LGBMClassifier
 from sklearn.ensemble import VotingClassifier
 import xgboost as xgb
 import lightgbm as lgb
 from catboost import CatBoostClassifier
 
 from sklearn.base import BaseEstimator, ClassifierMixin
+from xgboost import XGBClassifier
+
+from lh_code_adv.models.lstm_model import LSTMWrapper
 
 
 class ModelEnsemble(BaseEstimator, ClassifierMixin):
     def __init__(self):
         self.models = {
-            'lstm': None,
-            'xgboost': None,
-            'lightgbm': None,
-            'catboost': None
+            'xgboost': XGBClassifier(
+                use_label_encoder=False,
+                eval_metric='logloss'
+            ),
+            'lightgbm': LGBMClassifier(),
+            'catboost': CatBoostClassifier(
+                verbose=False
+            ),
+            'lstm': LSTMWrapper()  # 添加LSTM
         }
-        self.ensemble = None
         self.weights = None
+        self.ensemble = None
 
     def build_ensemble(self):
         """构建集成模型"""
@@ -51,6 +60,14 @@ class ModelEnsemble(BaseEstimator, ClassifierMixin):
             allow_writing_files=False
         )
         base_models.append(('cat', cat_model))
+
+        # LSTM
+        lstm_model = LSTMWrapper(
+            hidden_dim=64,
+            num_layers=2,
+            sequence_length=10
+        )
+        base_models.append(('lstm', lstm_model))
 
         # 创建投票分类器
         self.ensemble = VotingClassifier(

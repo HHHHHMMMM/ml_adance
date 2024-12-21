@@ -11,6 +11,7 @@ import logging
 
 pd.set_option('display.max_columns', None)
 
+
 def main():
     # 设置日志记录器并获取它
     logger = setup_logger('quant_trading')
@@ -19,7 +20,7 @@ def main():
     logger.info("初始化量化交易系统...")
     trading_system = QuantTradingSystem()
     trading_system.initialize_components()
-    backtesting_system=Backtester()
+    backtesting_system = Backtester()
 
     try:
         logger.info("开始模型训练阶段...")
@@ -35,10 +36,10 @@ def main():
         # 2. 获取历史数据
         logger.info("Step 2: 开始获取历史数据...")
         historical_data = {}
-        i=0
+        i = 0
         for ts_code in stock_list['ts_code']:
-            i=i+1
-            if i==10:
+            i = i + 1
+            if i == 2000:
                 break
             logger.info(f"正在获取 {ts_code} 的历史数据...")
             data = trading_system.data_engine.get_daily_data(ts_code)
@@ -167,9 +168,6 @@ def main():
             return
 
         # 6. 训练模型
-        # 修改位置：从第6步开始
-
-        # 6. 训练模型
         logger.info("Step 6: 开始训练模型...")
         try:
             # 训练机器学习模型
@@ -202,7 +200,7 @@ def main():
                     final_predictions.append(rule_pred)
                 else:
                     # 使用alpha权重
-                    final_predictions.append(ml_pred if np.random.random() < 0.7 else rule_pred)
+                    final_predictions.append(ml_pred if np.random.random() < 0.8 else rule_pred)
 
             logger.info("模型训练完成")
             logger.info("模型性能指标:")
@@ -367,171 +365,7 @@ def clean_features(combined_X):
     return combined_X
 
 
-def add_action_label(df, close_column='close', volume_column='vol', high_column='high', low_column='low', n_days=1):
-    """
-    优化的短线交易标签生成
-    """
-    required_columns = [close_column, volume_column, high_column, low_column]
-    if not all(col in df.columns for col in required_columns):
-        raise ValueError(f"数据缺少必要列，请确保包含: {required_columns}")
-
-    df = df.copy()
-
-    # 1. 趋势指标
-    # EMA和MACD
-    df['EMA5'] = df[close_column].ewm(span=5, adjust=False).mean()
-    df['EMA10'] = df[close_column].ewm(span=10, adjust=False).mean()
-    df['EMA20'] = df[close_column].ewm(span=20, adjust=False).mean()
-
-    df['MACD'] = df[close_column].ewm(span=12, adjust=False).mean() - df[close_column].ewm(span=26, adjust=False).mean()
-    df['MACD_signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
-    df['MACD_hist'] = df['MACD'] - df['MACD_signal']
-
-    # 2. 动量指标
-    df['RSI'] = calculate_rsi(df[close_column], window=14)
-
-    # 3. 波动率指标
-    df['ATR'] = calculate_atr(df[high_column], df[low_column], df[close_column], window=14)
-    df['ATR_ratio'] = df['ATR'] / df[close_column]
-
-    # 4. 成交量分析
-    df['Volume_MA5'] = df[volume_column].rolling(window=5).mean()
-    df['Volume_MA10'] = df[volume_column].rolling(window=10).mean()
-    df['Volume_ratio'] = df[volume_column] / df['Volume_MA5']
-
-    # 5. 价格趋势强度
-    df['Trend_strength'] = (df['EMA5'] - df['EMA20']) / df['EMA20']
-    df['Price_momentum'] = df[close_column].pct_change(3)
-
-    # 6. 止损止盈参考价位
-    df['High_5d'] = df[high_column].rolling(window=5).max()
-    df['Low_5d'] = df[low_column].rolling(window=5).min()
-    df['Stop_loss'] = df[close_column] * 0.97  # 3%止损
-    df['Take_profit'] = df[close_column] * 1.05  # 5%止盈
-
-    #7.市场环境判断
-    df['Market_Trend'] = (df['EMA20'] > df['EMA20'].shift(20))  # 判断中期趋势
-    df['Market_Strength'] = df['EMA5'].rolling(20).mean() / df['EMA20'] - 1  # 市场强度
-
-    # # 买入条件（需要满足多个条件）
-    # buy_condition = (
-    #     # 趋势向上
-    #         (df['EMA5'] > df['EMA10']) &
-    #         (df['EMA10'] > df['EMA20']) &
-    #
-    #         # MACD金叉或柱状图向上
-    #         ((df['MACD_hist'] > 0) & (df['MACD_hist'].shift(1) < 0) |
-    #          (df['MACD_hist'] > df['MACD_hist'].shift(1))) &
-    #
-    #         # RSI适中且向上
-    #         (df['RSI'] > 30) & (df['RSI'] < 70) &
-    #         (df['RSI'] > df['RSI'].shift(1)) &
-    #
-    #         # 放量上涨
-    #         (df['Volume_ratio'] > 1.2) &
-    #
-    #         # 价格动量为正
-    #         (df['Price_momentum'] > 0) &
-    #
-    #         # 波动率适中
-    #         (df['ATR_ratio'] < df['ATR_ratio'].rolling(window=20).mean())
-    # )
-    #
-    # # 卖出条件（满足任一条件）
-    # sell_condition = (
-    #     # 趋势反转
-    #         ((df['EMA5'] < df['EMA10']) & (df['EMA5'].shift(1) > df['EMA10'].shift(1))) |
-    #
-    #         # MACD死叉
-    #         ((df['MACD_hist'] < 0) & (df['MACD_hist'].shift(1) > 0)) |
-    #
-    #         # RSI超买
-    #         (df['RSI'] > 75) |
-    #
-    #         # 价格跌破支撑
-    #         (df[close_column] < df['Low_5d'].shift(1)) |
-    #
-    #         # 成交量萎缩
-    #         (df['Volume_ratio'] < 0.7)
-    # )
-    #
-    # # 设置标签
-    # df['action'] = 0  # 默认持有
-    # df.loc[buy_condition, 'action'] = 1  # 买入信号
-    # df.loc[sell_condition, 'action'] = 2  # 卖出信号
-    buy_condition = (
-        # 趋势确认（保持原有条件）
-            (df['EMA5'] > df['EMA10']) &
-
-            # 动量确认（修改阈值）
-            (df['Price_momentum'] > 0.01) &  # 提高动量要求
-
-            # 成交量确认（添加连续性）
-            (df['Volume_ratio'] > 1.1) &
-            (df['Volume_ratio'].rolling(3).mean() > 1.0) &
-
-            # RSI条件优化
-            (df['RSI'] > 35) & (df['RSI'] < 60) &  # 更保守的RSI区间
-            (df['RSI'] > df['RSI'].shift(1)) &  # RSI上升
-
-            # 添加支撑位确认
-            (df[close_column] > df['Low_5d']) &
-
-            # 波动率确认
-            (df['ATR_ratio'] < df['ATR_ratio'].rolling(10).mean())  # 波动率降低
-    )
-
-    # 修改卖出条件（更严格）
-    sell_condition = (
-        # 趋势明确反转
-            ((df['EMA5'] < df['EMA10']) &
-             (df['EMA10'] < df['EMA20']) &
-             (df['MACD_hist'] < 0)) |
-
-            # RSI过高
-            (df['RSI'] > 80) |
-
-            # 止损条件
-            (df[close_column] < df['Stop_loss']) |
-
-            # 止盈条件
-            (df[close_column] > df['Take_profit'])
-    )
-
-    # 设置标签
-    df['action'] = 0
-    df.loc[buy_condition, 'action'] = 1
-    df.loc[sell_condition, 'action'] = 2
-
-    df.loc[(df['action'] == 1) & (df['action'].shift(1) == 1), 'action'] = 0
-    df.loc[(df['action'] == 2) & (df['action'].shift(1) == 2), 'action'] = 0
-
-    # 记录标签分布
-    label_dist = df['action'].value_counts()
-    logging.info(f"优化后的标签分布:\n{label_dist}")
-
-    return df.dropna()
-
-
-def calculate_rsi(close, window=14):
-    """计算RSI指标"""
-    delta = close.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
-
-
-def calculate_atr(high, low, close, window=14):
-    """计算ATR指标"""
-    tr1 = high - low
-    tr2 = abs(high - close.shift(1))
-    tr3 = abs(low - close.shift(1))
-    tr = pd.DataFrame({'tr1': tr1, 'tr2': tr2, 'tr3': tr3}).max(axis=1)
-    return tr.rolling(window=window).mean()
-
-
-def comprehensive_feature_selection(X, y_ml, y_rule, method='combined_mi'):
+def comprehensive_feature_selection(X, y_ml, y_rule, method='combined_importance'):
     logger = setup_logger('quant_trading')
 
     # 创建输入数据的副本以避免碎片化
@@ -590,6 +424,7 @@ def comprehensive_feature_selection(X, y_ml, y_rule, method='combined_mi'):
 
     return selected_features, feature_importance.to_dict('records')
 
+
 def elbow_point(values, min_features=5, smooth_window=None):
     logger = setup_logger('quant_trading')
 
@@ -642,6 +477,7 @@ def elbow_point(values, min_features=5, smooth_window=None):
     except Exception as e:
         logger.warning(f"肘部法则计算失败：{str(e)}，默认返回{min_features}个特征")
         return min_features
+
 
 if __name__ == "__main__":
     main()

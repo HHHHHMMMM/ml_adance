@@ -1,56 +1,101 @@
-# models/lstm_model.py
-
+# lstm_model.py
 import torch
 import torch.nn as nn
+from sklearn.base import BaseEstimator, ClassifierMixin
+from torch.utils.data import DataLoader, TensorDataset
+import numpy as np
 
 
 class LSTMModel(nn.Module):
-    def __init__(self, input_dim, hidden_dim, num_layers, output_dim, dropout=0.2):
-        """
-        LSTM模型定义
-
-        Parameters:
-        input_dim (int): 输入特征维度
-        hidden_dim (int): 隐藏层维度
-        num_layers (int): LSTM层数
-        output_dim (int): 输出维度
-        dropout (float): dropout率
-        """
-        super(LSTMModel, self).__init__()
-
-        self.hidden_dim = hidden_dim
-        self.num_layers = num_layers
-
+    def __init__(self, input_dim, hidden_dim=64, num_layers=2, dropout=0.2):
+        super().__init__()
         self.lstm = nn.LSTM(
             input_dim,
             hidden_dim,
-            num_layers,
-            batch_first=True,
-            dropout=dropout if num_layers > 1 else 0
+            num_layers=num_layers,
+            dropout=dropout if num_layers > 1 else 0,
+            batch_first=True
         )
-
-        self.fc = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim // 2, output_dim)
-        )
+        self.fc = nn.Linear(hidden_dim, 3)  # 3分类
 
     def forward(self, x):
-        # 初始化隐藏状态
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
+        lstm_out, _ = self.lstm(x)
+        return self.fc(lstm_out[:, -1, :])
 
-        # LSTM层
-        out, _ = self.lstm(x, (h0, c0))
 
-        # 只使用最后一个时间步的输出
-        out = self.fc(out[:, -1, :])
-        return out
+class LSTMWrapper(BaseEstimator, ClassifierMixin):
+    def __init__(self, input_dim=None, hidden_dim=64, num_layers=2, sequence_length=10):
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.sequence_length = sequence_length
+        self.model = None
 
-    def predict(self, x):
-        """用于推理的方法"""
-        self.eval()
+    def fit(self, X, y):
+        if self.input_dim is None:
+            self.input_dim = X.shape[1]
+
+        self.model = LSTMModel(self.input_dim, self.hidden_dim, self.num_layers)
+        dataset = self._prepare_sequences(X, y)
+        train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(self.model.parameters())
+
+        for epoch in range(10):  # 训练10个epoch
+            self.model.train()
+            for batch_X, batch_y in train_loader:
+                optimizer.zero_grad()
+                outputs = self.model(batch_X)
+                loss = criterion(outputs, batch_y)
+                loss.backward()
+                optimizer.step()
+
+        return self
+
+    def predict(self, X):
+        if self.model is None:
+            raise ValueError("Model not fitted yet!")
+
+        self.model.eval()
+        dataset = self._prepare_sequences(X, np.zeros(len(X)))
+        loader = DataLoader(dataset, batch_size=32)
+
+        predictions = []
         with torch.no_grad():
-            out = self.forward(x)
-            return torch.softmax(out, dim=1)
+            for batch_X, _ in loader:
+                outputs = self.model(batch_X)
+                _, pred = torch.max(outputs, 1)
+                predictions.extend(pred.numpy())
+
+        return np.array(predictions)
+
+    def predict_proba(self, X):
+        if self.model is None:
+            raise ValueError("Model not fitted yet!")
+
+        self.model.eval()
+        dataset = self._prepare_sequences(X, np.zeros(len(X)))
+        loader = DataLoader(dataset, batch_size=32)
+
+        probabilities = []
+        with torch.no_grad():
+            for batch_X, _ in loader:
+                outputs = self.model(batch_X)
+                probs = torch.softmax(outputs, dim=1)
+                probabilities.extend(probs.numpy())
+
+        return np.array(probabilities)
+
+    def _prepare_sequences(self, X, y):
+        sequences = []
+        targets = []
+        for i in range(len(X) - self.sequence_length):
+            seq = X[i:i + self.sequence_length]
+            target = y[i + self.sequence_length]
+            sequences.append(seq)
+            targets.append(target)
+        return TensorDataset(
+            torch.FloatTensor(sequences),
+            torch.LongTensor(targets)
+        )

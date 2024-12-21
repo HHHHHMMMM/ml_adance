@@ -67,6 +67,7 @@ class TradingSignalGenerator:
             buy_condition = (
                     trend_condition &
                     momentum_condition &
+                    pattern_condition&
                     volatility_condition &
                     volume_condition &
                     (df['intraday_volatility'] < df['intraday_volatility'].rolling(10).mean())

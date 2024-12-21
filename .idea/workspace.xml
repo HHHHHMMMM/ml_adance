@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e1e8b2aa-ba9c-43a4-8228-5169ea6cd133" name="Changes" comment="拆分没拆完版本，但fe_all_in_one版本是可用的">
-      <change afterPath="$PROJECT_DIR$/lh_advance" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -84,6 +82,7 @@
       <workItem from="1734416249203" duration="593000" />
       <workItem from="1734454784391" duration="1210000" />
       <workItem from="1734484054474" duration="600000" />
+      <workItem from="1734741291291" duration="47000" />
     </task>
     <task id="LOCAL-00001" summary="拆分没拆完版本，但fe_all_in_one版本是可用的">
       <option name="closed" value="true" />
